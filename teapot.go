@@ -283,12 +283,12 @@ func main() {
 	}
 
 	// Load our teapot
-	//monkey, err := ReadObj("monkey.obj")
-	//if err != nil {
-	//	panic(err)
-	//}
-	//monkeyVAO := LoadObj(monkey)
-	monkeyVAO := LoadCube()
+	monkey, err := ReadObj("monkey.obj")
+	if err != nil {
+		panic(err)
+	}
+	monkeyVAO := LoadObj(monkey)
+	//monkeyVAO := LoadCube()
 
 	vertAttrib := uint32(gl.GetAttribLocation(program, gl.Str("vert\x00")))
 	gl.EnableVertexAttribArray(vertAttrib)
@@ -303,8 +303,19 @@ func main() {
 	gl.DepthFunc(gl.LESS)
 	gl.ClearColor(1.0, 1.0, 1.0, 1.0)
 
+	angle := 0.0
+	previousTime := glfw.GetTime()
+
 	for !window.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+		// Update
+		time := glfw.GetTime()
+		elapsed := time - previousTime
+		previousTime = time
+
+		angle += elapsed
+		model = mgl32.HomogRotate3D(float32(angle), mgl32.Vec3{0, 1, 0})
 
 		// Render
 		gl.UseProgram(program)
@@ -315,7 +326,7 @@ func main() {
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.BindTexture(gl.TEXTURE_2D, texture)
 
-		gl.DrawArrays(gl.TRIANGLES, 0, 6*2*3)
+		gl.DrawArrays(gl.TRIANGLES, 0, 1065)
 
 		// Do OpenGL stuff.
 		window.SwapBuffers()
