@@ -87,14 +87,20 @@ func ReadObj(name string) (*obj.Object, error) {
 func LoadObj(o *obj.Object) uint32 {
 	stride := 5
 	// X, Y, Z, U, V
-	vertices := make([]float32, len(o.Vertices)*stride)
+	vertices := make([]float32, len(o.Faces)*stride*3)
 
-	for i, v := range o.Vertices {
-		vertices[i*stride] = float32(v.X)
-		vertices[i*stride+1] = float32(v.Y)
-		vertices[i*stride+2] = float32(v.Z)
-		vertices[i*stride+3] = float32(o.Textures[i].U)
-		vertices[i*stride+4] = float32(o.Textures[i].V)
+	for i, f := range o.Faces {
+		if len(f.Points) != 3 {
+			panic("We only do triangles!")
+		}
+
+		for j, p := range f.Points {
+			vertices[(i*3+j)*stride] = float32(p.Vertex.X)
+			vertices[(i*3+j)*stride+1] = float32(p.Vertex.Y)
+			vertices[(i*3+j)*stride+2] = float32(p.Vertex.Z)
+			vertices[(i*3+j)*stride+3] = float32(p.Texture.U)
+			vertices[(i*3+j)*stride+4] = float32(p.Texture.V)
+		}
 	}
 
 	var vao uint32
@@ -283,7 +289,7 @@ func main() {
 	}
 
 	// Load our teapot
-	monkey, err := ReadObj("monkey.obj")
+	monkey, err := ReadObj("suzanne.obj")
 	if err != nil {
 		panic(err)
 	}
@@ -326,7 +332,7 @@ func main() {
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.BindTexture(gl.TEXTURE_2D, texture)
 
-		gl.DrawArrays(gl.TRIANGLES, 0, 1065)
+		gl.DrawArrays(gl.TRIANGLES, 0, 968*3)
 
 		// Do OpenGL stuff.
 		window.SwapBuffers()
