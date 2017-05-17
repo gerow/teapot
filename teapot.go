@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
-	_ "image/png"
 	"io/ioutil"
+	"math"
 	"os"
 	"path"
 	"runtime"
 	"strings"
+
+	_ "image/png"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
@@ -85,8 +87,8 @@ func ReadObj(name string) (*obj.Object, error) {
 }
 
 func LoadObj(o *obj.Object) uint32 {
-	stride := 5
-	// X, Y, Z, U, V
+	stride := 8
+	// X, Y, Z, nX, nY, nZ, U, V
 	vertices := make([]float32, len(o.Faces)*stride*3)
 
 	for i, f := range o.Faces {
@@ -98,8 +100,11 @@ func LoadObj(o *obj.Object) uint32 {
 			vertices[(i*3+j)*stride] = float32(p.Vertex.X)
 			vertices[(i*3+j)*stride+1] = float32(p.Vertex.Y)
 			vertices[(i*3+j)*stride+2] = float32(p.Vertex.Z)
-			vertices[(i*3+j)*stride+3] = float32(p.Texture.U)
-			vertices[(i*3+j)*stride+4] = float32(p.Texture.V)
+			vertices[(i*3+j)*stride+3] = float32(p.Normal.X)
+			vertices[(i*3+j)*stride+4] = float32(p.Normal.Y)
+			vertices[(i*3+j)*stride+5] = float32(p.Normal.Z)
+			vertices[(i*3+j)*stride+6] = float32(p.Texture.U)
+			vertices[(i*3+j)*stride+7] = float32(p.Texture.V)
 		}
 	}
 
@@ -280,6 +285,9 @@ func main() {
 	textureUniform := gl.GetUniformLocation(program, gl.Str("tex\x00"))
 	gl.Uniform1i(textureUniform, 0)
 
+	ambientUniform := gl.GetUniformLocation(program, gl.Str("ambient\x00"))
+	gl.Uniform3f(ambientUniform, 1.0, 1.0, 1.0)
+
 	gl.BindFragDataLocation(program, 0, gl.Str("outputColor\x00"))
 
 	// Load the texture
@@ -298,11 +306,15 @@ func main() {
 
 	vertAttrib := uint32(gl.GetAttribLocation(program, gl.Str("vert\x00")))
 	gl.EnableVertexAttribArray(vertAttrib)
-	gl.VertexAttribPointer(vertAttrib, 3, gl.FLOAT, false, 5*4, gl.PtrOffset(0))
+	gl.VertexAttribPointer(vertAttrib, 3, gl.FLOAT, false, 8*4, gl.PtrOffset(0))
+
+	normalAttrib := uint32(gl.GetAttribLocation(program, gl.Str("vertNormal\x00")))
+	gl.EnableVertexAttribArray(normalAttrib)
+	gl.VertexAttribPointer(normalAttrib, 3, gl.FLOAT, false, 8*4, gl.PtrOffset(3*4))
 
 	texCoordAttrib := uint32(gl.GetAttribLocation(program, gl.Str("vertTexCoord\x00")))
 	gl.EnableVertexAttribArray(texCoordAttrib)
-	gl.VertexAttribPointer(texCoordAttrib, 2, gl.FLOAT, false, 5*4, gl.PtrOffset(3*4))
+	gl.VertexAttribPointer(texCoordAttrib, 2, gl.FLOAT, false, 8*4, gl.PtrOffset(6*4))
 
 	// Configure global settings
 	gl.Enable(gl.DEPTH_TEST)
@@ -322,6 +334,13 @@ func main() {
 
 		angle += elapsed
 		model = mgl32.HomogRotate3D(float32(angle), mgl32.Vec3{0, 1, 0})
+
+		ambient := mgl32.Vec3{
+			float32(math.Sin(time)),
+			float32(math.Sin(time + 2.0*math.Pi/3.0)),
+			float32(math.Sin(time + 4.0*math.Pi/3.0)),
+		}
+		gl.Uniform3fv(ambientUniform, 1, &ambient[0])
 
 		// Render
 		gl.UseProgram(program)
