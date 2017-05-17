@@ -6,7 +6,6 @@ import (
 	"image"
 	"image/draw"
 	"io/ioutil"
-	"math"
 	"os"
 	"path"
 	"runtime"
@@ -286,7 +285,14 @@ func main() {
 	gl.Uniform1i(textureUniform, 0)
 
 	ambientUniform := gl.GetUniformLocation(program, gl.Str("ambient\x00"))
-	gl.Uniform3f(ambientUniform, 1.0, 1.0, 1.0)
+	gl.Uniform3f(ambientUniform, 0.2, 0.2, 0.2)
+
+	sunDirUniform := gl.GetUniformLocation(program, gl.Str("sunDir\x00"))
+	sunDir := mgl32.Vec3{1.0, -1.0, 1.0}.Normalize()
+	gl.Uniform3fv(sunDirUniform, 1, &sunDir[0])
+
+	sunDiffuseUniform := gl.GetUniformLocation(program, gl.Str("sunDiffuse\x00"))
+	gl.Uniform3f(sunDiffuseUniform, 0.8, 0.8, 0.8)
 
 	gl.BindFragDataLocation(program, 0, gl.Str("outputColor\x00"))
 
@@ -335,12 +341,12 @@ func main() {
 		angle += elapsed
 		model = mgl32.HomogRotate3D(float32(angle), mgl32.Vec3{0, 1, 0})
 
-		ambient := mgl32.Vec3{
-			float32(math.Sin(time)),
-			float32(math.Sin(time + 2.0*math.Pi/3.0)),
-			float32(math.Sin(time + 4.0*math.Pi/3.0)),
-		}
-		gl.Uniform3fv(ambientUniform, 1, &ambient[0])
+		//ambient := mgl32.Vec3{
+		//	float32(0.2 * math.Sin(time)),
+		//	float32(0.2 * math.Sin(time+2.0*math.Pi/3.0)),
+		//	float32(0.2 * math.Sin(time+4.0*math.Pi/3.0)),
+		//}
+		//gl.Uniform3fv(ambientUniform, 1, &ambient[0])
 
 		// Render
 		gl.UseProgram(program)
